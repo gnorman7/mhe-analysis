@@ -1,5 +1,7 @@
 # MHE Analysis
-This notebook is for the analysis of CT data obtained by Yeager et al. at Los Alamos National Lab (LANL). This CT data consists of 2D image slices showing idox crystals within a binder material. The goal of this analysis is to develop a procedure for segmenting the IDOX crystals from each other and from the binder material. 
+This project is for the analysis of CT data obtained by Yeager et al. at Los Alamos National Lab (LANL). This CT data consists of 2D image slices showing idox crystals within a binder material. The goal of this analysis is to develop a procedure for segmenting the IDOX crystals from each other and from the binder material. 
+
+Questions should be directed to C. Gus Becker (GitHub/GitLab: @cgusb).
 
 # Procedure description
 Segmentation procedure operates on the 2D slices. Current approach will be to adapt the procedure published by [Wälhby et al. 2004](https://onlinelibrary.wiley.com/doi/full/10.1111/j.0022-2720.2004.01338.x)* as follows:
