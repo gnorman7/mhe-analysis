@@ -127,8 +127,10 @@ def binarize_3d(
     """
     smoothed = skimage.filters.gaussian(imgs)
     binarized = smoothed > thresh_val
+    filled = binarized.copy()
     if fill_holes == 'all':
-        filled = ndi.binary_fill_holes(binarized)
+        for i in range((imgs.shape[0])):
+            filled[i, :, :] = ndi.binary_fill_holes(binarized[i, :, :])
     else:
         filled = skimage.morphology.remove_small_holes(
             binarized, area_threshold=fill_holes
