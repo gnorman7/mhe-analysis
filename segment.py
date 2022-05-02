@@ -244,6 +244,14 @@ def plot_comparison(img_idx, dict1, dict2, keys='all', fig_w=4, dpi=300):
             axes[j, i].set_axis_off()
     return fig, axes
 
+def count_segmented_voxels(process_dict, exclude_zero=True):
+    imgs_seg = process_dict['integer-labels']
+    unique, counts = np.unique(imgs_seg, return_counts=True)
+    label_counts = dict(zip(unique, counts))
+    if exclude_zero:
+        del label_counts[0]
+    return label_counts
+
 def raw_to_3d_segment(
     img_dir, 
     new_segmented_dir_path,
