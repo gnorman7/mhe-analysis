@@ -2,7 +2,7 @@
 from concurrent.futures import process
 from pathlib import Path
 # Third-party imports
-import imagecodecs  # dependency required for loading compressed tif images
+# import imagecodecs  # dependency required for loading compressed tif images
 import imageio as iio
 import matplotlib.pyplot as plt
 import napari
@@ -143,7 +143,9 @@ def binarize_3d(
         return filled
 
 def segment_3d(
-    binarized_imgs, 
+    imgs, 
+    thresh_val=0.65, 
+    fill_holes=64,
     min_peak_distance=30,
     return_process_dict=False
 ):
@@ -161,7 +163,13 @@ def segment_3d(
     list
         List of 2-D arrays representing the segmented and labeled images.
     """
-    dist_map = ndi.distance_transform_edt(binarized_imgs)
+    binarize_3d_dict = binarize_3d(
+        imgs, 
+        thresh_val=thresh_val,
+        fill_holes=fill_holes,
+        return_process_dict=True
+    )
+    dist_map = ndi.distance_transform_edt(binarize_3d_dict['holes-filled'])
     # Get Nx2 array of N number of (row, col) coordinates
     maxima = skimage.feature.peak_local_max(
         dist_map, 
@@ -169,13 +177,18 @@ def segment_3d(
         exclude_border=False
     )
     # Assign a label to each point to use as seed for watershed seg
-    maxima_mask = np.zeros_like(binarized_imgs, dtype=float)
+    maxima_mask = np.zeros_like(binarize_3d_dict['holes-filled'], dtype=float)
     maxima_mask[tuple(maxima.T)] = 1
     seeds = skimage.measure.label(maxima_mask)
-    labels = skimage.segmentation.watershed(-1 * dist_map, seeds, mask=binarized_imgs)
+    labels = skimage.segmentation.watershed(
+        -1 * dist_map, seeds, mask=binarize_3d_dict['holes-filled']
+    )
     colored_labels = skimage.color.label2rgb(labels, bg_label=0)
     if return_process_dict:
         process_dict = {
+            'raw' : imgs,
+            'binarized' : binarize_3d_dict['binarized'],
+            'holes-filled' : binarize_3d_dict['holes-filled'],
             'distance-map' : dist_map,
             'maxima-points' : maxima,
             'maxima-mask' : maxima_mask,
@@ -187,42 +200,46 @@ def segment_3d(
     else:
         return labels
 
-def plot_process(img_idx, imgs, binarize_3d_dict, segment_3d_dict):
+def plot_process(img_idx, process_dict):
     fig, axes = plt.subplots(2, 3, dpi=300, constrained_layout=True)
-    axes[0, 0].imshow(imgs[img_idx, :, :], interpolation='nearest')
-    axes[0, 0].set_axis_off()
-    axes[0, 0].set_title('raw')
-    for i, (key, value) in enumerate(binarize_3d_dict.items()):
-        axes[0, i + 1].imshow(value[img_idx, :, :], interpolation='nearest')
-        axes[0, i + 1].set_axis_off()
-        axes[0, i + 1].set_title(key)
-    for i, key  in enumerate(['distance-map', 'integer-labels']):
-        axes[1, i].imshow(
-            segment_3d_dict[key][img_idx, :, :], interpolation='nearest'
-        )
+    for i, key in enumerate(['raw', 'binarized', 'holes-filled']):
+        axes[0, i].imshow(process_dict[key][img_idx, :, :], interpolation='nearest')
+        axes[0, i].set_axis_off()
+        axes[0, i].set_title(key)
+    for i, key in enumerate(['distance-map', 'integer-labels']):
+        axes[1, i].imshow(process_dict[key][img_idx, :, :], interpolation='nearest')
         axes[1, i].set_axis_off()
         axes[1, i].set_title(key)
     axes[1, 2].imshow(
-        segment_3d_dict['colored-labels'][img_idx, :, :, :], interpolation='nearest'
+        process_dict['colored-labels'][img_idx, :, :, :], interpolation='nearest'
     )
     axes[1, 2].set_axis_off()
     axes[1, 2].set_title('colored-labels')
     # Get x, y for all maxima
-    x = segment_3d_dict['maxima-points'][:, 2]
-    y = segment_3d_dict['maxima-points'][:, 1]
+    x = process_dict['maxima-points'][:, 2]
+    y = process_dict['maxima-points'][:, 1]
     # Find the maxima that fall on the current slice (img_idx)
-    x_img_idx = x[segment_3d_dict['maxima-points'][:, 0] == img_idx]
-    y_img_idx = y[segment_3d_dict['maxima-points'][:, 0] == img_idx]
+    x_img_idx = x[process_dict['maxima-points'][:, 0] == img_idx]
+    y_img_idx = y[process_dict['maxima-points'][:, 0] == img_idx]
     axes[1, 0].scatter(x_img_idx, y_img_idx, color='red', s=2)
     return fig, axes
 
-def plot_comparison(img_idx, dict1, dict2):
-    nrows = len(list(dict1.values()))
-    fig, axes = plt.subplots(nrows, 2, figsize=(4, 4), dpi=300, constrained_layout=True)
-    for i, key in enumerate(dict1.keys()):
+def plot_comparison(img_idx, dict1, dict2, keys='all', fig_w=4, dpi=300):
+    if keys == 'all':
+        keys = [
+            key for key in dict1.keys() 
+            if (isinstance(dict1[key], np.ndarray) and len(dict1[key].shape) > 2)
+        ]
+    nrows = 2
+    ncols = len(keys)
+    img_w = dict1[keys[0]].shape[2]
+    img_h = dict1[keys[0]].shape[1]
+    fig_h = fig_w * (img_h / img_w) * (nrows / ncols)
+    fig, axes = plt.subplots(2, ncols, figsize=(fig_w, fig_h), dpi=dpi, constrained_layout=True)
+    for i, key in enumerate(keys):
         for j, d in enumerate([dict1, dict2]):
-            axes[i, j].imshow(d[key][img_idx, :, :], interpolation='nearest')
-            axes[i, j].set_axis_off()
+            axes[j, i].imshow(d[key][img_idx, :, :], interpolation='nearest')
+            axes[j, i].set_axis_off()
     return fig, axes
 
 def raw_to_3d_segment(
