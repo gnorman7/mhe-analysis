@@ -248,7 +248,7 @@ def raw_to_3d_segment(
     img_dir, 
     new_segmented_dir_path,
     thresh_val=0.65,
-    fill_hole_area=64,
+    fill_holes=64,
     min_peak_distance=30
 ):
     """Workflow for loading, binarizing, and segmenting example images.
@@ -261,8 +261,8 @@ def raw_to_3d_segment(
         Path for new directory to be created to contain the segmented and labeled images that will be created.
     thresh_val : int, optional
         Floating-point grayscale level, to be passed to binarize_3d(), at which images are thresholded above, by default 0.65
-    fill_hole_area : int, optional 
-        Hole area in pixels, to be passed to binarize_3d(), for which any smaller hole will be filled in binary images, by default 64
+    fill_holes : int or 'all', optional 
+        Hole area in pixels, to be passed to binarize_3d(), for which any smaller hole will be filled in binary images. If 'all' is passed, image slices will be iterated to fill all holes. Defaults to 64.
     min_peak_distance : int, optional
         Minimum distance in pixels between local maxima of distance map to be passed to segment_3d(), by default 30
     """
@@ -273,22 +273,17 @@ def raw_to_3d_segment(
         also_return_names=True,
         convert_to_float=True
     )
-    print(f'Binarizing images...')
-    binarized_3d_dict = binarize_3d(
+    print(f'Segmenting images...')
+    process_dict = segment_3d(
         imgs, 
         thresh_val=thresh_val, 
-        fill_hole_area=fill_hole_area, 
-        return_process_dict=True
-    )
-    print(f'Segmenting images...')
-    segment_3d_dict = segment_3d(
-        binarized_3d_dict['holes-filled'], 
+        fill_holes=fill_holes, 
         min_peak_distance=min_peak_distance,
         return_process_dict=True
     )
     print(f'Saving images...')
     save_images(
-        segment_3d_dict['integer-labels'], 
+        process_dict['integer-labels'], 
         new_segmented_dir_path, 
         img_names=img_names,
         convert_to_16bit=True
@@ -301,7 +296,7 @@ if __name__ == '__main__':
         'example-imgs',  # Path to directory containing CT data
         'segmented-integer-labels',  # Path for new dir to contain segmented images
         thresh_val=0.65,  # Floating-point grayscale level at which images are thresholded above 
-        fill_hole_area=64,  # Hole area in pixels for which any smaller hole will be filled in binary images
+        fill_holes=64,  # Hole area in pixels for which any smaller hole will be filled in binary images
         min_peak_distance=30  # Minimum distance in pixels between local maxima of distance map
     )
 
