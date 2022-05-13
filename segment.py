@@ -202,6 +202,54 @@ def segment_3d(
     else:
         return labels
 
+def watershed_segment(
+    imgs_binarized, 
+    min_peak_distance=1,
+    return_dict=False
+):
+    """Create images with regions segmented and labeled using a watershed segmentation algorithm.
+
+    Parameters
+    ----------
+    binarized_imgs : numpy.ndarray
+        3D array representing binary images to be used in segmentation.
+    min_peak_distance : int, optional
+        Minimum distance (in pixels) of local maxima to be used to generate seeds for watershed segmentation algorithm. Defaults to 30.
+
+    Returns
+    -------
+    list
+        List of 2-D arrays representing the segmented and labeled images.
+    """
+    dist_map = ndi.distance_transform_edt(imgs_binarized)
+    # Get Nx2 array of N number of (row, col) coordinates
+    maxima = skimage.feature.peak_local_max(
+        dist_map, 
+        min_distance=min_peak_distance,
+        exclude_border=False
+    )
+    # Assign a label to each point to use as seed for watershed seg
+    maxima_mask = np.zeros_like(imgs_binarized, dtype=float)
+    maxima_mask[tuple(maxima.T)] = 1
+    seeds = skimage.measure.label(maxima_mask)
+    labels = skimage.segmentation.watershed(
+        -1 * dist_map, seeds, mask=imgs_binarized
+    )
+    colored_labels = skimage.color.label2rgb(labels, bg_label=0)
+    if return_dict:
+        segment_dict = {
+            'binarized' : imgs_binarized,
+            'distance-map' : dist_map,
+            'maxima-points' : maxima,
+            'maxima-mask' : maxima_mask,
+            'seeds' : seeds,
+            'integer-labels' : labels,
+            'colored-labels' : colored_labels
+        }
+        return segment_dict
+    else:
+        return labels
+
 def plot_process(img_idx, process_dict):
     fig, axes = plt.subplots(2, 3, dpi=300, constrained_layout=True)
     for i, key in enumerate(['raw', 'binarized', 'holes-filled']):
