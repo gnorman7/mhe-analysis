@@ -213,8 +213,8 @@ def watershed_segment(
     ----------
     binarized_imgs : numpy.ndarray
         3D array representing binary images to be used in segmentation.
-    min_peak_distance : int, optional
-        Minimum distance (in pixels) of local maxima to be used to generate seeds for watershed segmentation algorithm. Defaults to 30.
+    min_peak_distance : int or str, optional
+        Minimum distance (in pixels) of local maxima to be used to generate seeds for watershed segmentation algorithm. 'median_radius' can be passed to use the radius of the circle with equivalent area to the median binary region. Defaults to 1.
 
     Returns
     -------
@@ -222,7 +222,17 @@ def watershed_segment(
         List of 2-D arrays representing the segmented and labeled images.
     """
     dist_map = ndi.distance_transform_edt(imgs_binarized)
-    # Get Nx2 array of N number of (row, col) coordinates
+    # If prompted, calculate equivalent median radius
+    if min_peak_distance == 'median_radius':
+        regions = []
+        for i in range(imgs_binarized.shape[0]):
+            labels = measure.label(imgs_binarized[0, ...])
+            regions += measure.regionprops(labels)
+        areas = [region.area for region in regions]
+        median_slice_area = np.median(areas)
+        # Radius of circle of equivalent area
+        min_peak_distance = int(round(np.sqrt(median_slice_area) // np.pi))
+    # Calculate the local maxima with min_peak_distance separation
     maxima = skimage.feature.peak_local_max(
         dist_map, 
         min_distance=min_peak_distance,
