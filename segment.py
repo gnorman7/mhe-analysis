@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 import napari
 import numpy as np
 from scipy import ndimage as ndi
-import skimage
+from skimage import color, feature, filters, morphology, measure, segmentation, util
 
 
 def load_images(
@@ -46,7 +46,7 @@ def load_images(
     for img_path in img_path_list:
         img = iio.imread(img_path) 
         if convert_to_float:
-            img = skimage.util.img_as_float(img)
+            img = util.img_as_float(img)
         imgs.append(img)
     if return_3d_array:
         imgs = np.stack(imgs)
@@ -87,7 +87,7 @@ def save_images(
         elif len(imgs.shape) == 4:
             file_suffix = 'png'
             imgs = [
-                skimage.util.img_as_ubyte(imgs[i, :, :, :]) 
+                util.img_as_ubyte(imgs[i, :, :, :]) 
                 for i in range(imgs.shape[0])
             ]
     for i, img in enumerate(imgs):
@@ -125,14 +125,14 @@ def binarize_3d(
     numpy.ndarray or dict
         If return_process_dict is False, a 3D array representing the hole-filled, binary images, else a dictionary is returned with a 3D array for each step in the binarization process.
     """
-    smoothed = skimage.filters.gaussian(imgs)
+    smoothed = filters.gaussian(imgs)
     binarized = smoothed > thresh_val
     filled = binarized.copy()
     if fill_holes == 'all':
         for i in range((imgs.shape[0])):
             filled[i, :, :] = ndi.binary_fill_holes(binarized[i, :, :])
     else:
-        filled = skimage.morphology.remove_small_holes(
+        filled = morphology.remove_small_holes(
             binarized, area_threshold=fill_holes
         )
     if return_process_dict:
@@ -173,7 +173,7 @@ def segment_3d(
     )
     dist_map = ndi.distance_transform_edt(binarize_3d_dict['holes-filled'])
     # Get Nx2 array of N number of (row, col) coordinates
-    maxima = skimage.feature.peak_local_max(
+    maxima = feature.peak_local_max(
         dist_map, 
         min_distance=min_peak_distance,
         exclude_border=False
@@ -181,11 +181,11 @@ def segment_3d(
     # Assign a label to each point to use as seed for watershed seg
     maxima_mask = np.zeros_like(binarize_3d_dict['holes-filled'], dtype=float)
     maxima_mask[tuple(maxima.T)] = 1
-    seeds = skimage.measure.label(maxima_mask)
-    labels = skimage.segmentation.watershed(
+    seeds = measure.label(maxima_mask)
+    labels = segmentation.watershed(
         -1 * dist_map, seeds, mask=binarize_3d_dict['holes-filled']
     )
-    colored_labels = skimage.color.label2rgb(labels, bg_label=0)
+    colored_labels = color.label2rgb(labels, bg_label=0)
     if return_process_dict:
         process_dict = {
             'raw' : imgs,
@@ -233,7 +233,7 @@ def watershed_segment(
         # Radius of circle of equivalent area
         min_peak_distance = int(round(np.sqrt(median_slice_area) // np.pi))
     # Calculate the local maxima with min_peak_distance separation
-    maxima = skimage.feature.peak_local_max(
+    maxima = feature.peak_local_max(
         dist_map, 
         min_distance=min_peak_distance,
         exclude_border=False
@@ -241,11 +241,11 @@ def watershed_segment(
     # Assign a label to each point to use as seed for watershed seg
     maxima_mask = np.zeros_like(imgs_binarized, dtype=float)
     maxima_mask[tuple(maxima.T)] = 1
-    seeds = skimage.measure.label(maxima_mask)
-    labels = skimage.segmentation.watershed(
+    seeds = measure.label(maxima_mask)
+    labels = segmentation.watershed(
         -1 * dist_map, seeds, mask=imgs_binarized
     )
-    colored_labels = skimage.color.label2rgb(labels, bg_label=0)
+    colored_labels = color.label2rgb(labels, bg_label=0)
     if return_dict:
         segment_dict = {
             'binarized' : imgs_binarized,
