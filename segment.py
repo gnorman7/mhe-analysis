@@ -260,6 +260,46 @@ def watershed_segment(
     else:
         return labels
 
+def plot_segment_steps(
+    segment_dict, 
+    img_idx, 
+    keys=['cropped', 'binarized', 'distance-map', 'colored-labels'],
+    plot_maxima='distance-map', 
+    fig_w=7,
+):
+    n_axes_h = 1
+    n_axes_w = len(keys)
+    img_w = segment_dict['cropped'].shape[2]
+    img_h = segment_dict['cropped'].shape[1]
+    title_buffer = .5
+    fig_h = fig_w * (img_h / img_w) * (n_axes_h / n_axes_w) + title_buffer
+    fig, axes = plt.subplots(
+        n_axes_h, n_axes_w, dpi=300, figsize=(fig_w, fig_h), 
+        constrained_layout=True, facecolor='white',
+    )
+    ax = axes.ravel()
+    for i, key in enumerate(keys):
+        if key == 'cropped':
+            ax[i].imshow(
+                segment_dict[key][img_idx, ...], interpolation='nearest',
+                vmin=0, vmax=1
+            )
+        else:
+            ax[i].imshow(
+                segment_dict[key][img_idx, ...], interpolation='nearest'
+            )
+        ax[i].set_axis_off()
+        ax[i].set_title(key)
+        if plot_maxima == key:
+            # Get x, y for all maxima
+            x = segment_dict['maxima-points'][:, 2]
+            y = segment_dict['maxima-points'][:, 1]
+            # Find the maxima that fall on the current slice (img_idx)
+            x_img_idx = x[segment_dict['maxima-points'][:, 0] == img_idx]
+            y_img_idx = y[segment_dict['maxima-points'][:, 0] == img_idx]
+            ax[i].scatter(x_img_idx, y_img_idx, color='red', s=2)
+    return fig, axes
+    
 def plot_process(img_idx, process_dict):
     fig, axes = plt.subplots(2, 3, dpi=300, constrained_layout=True)
     for i, key in enumerate(['raw', 'binarized', 'holes-filled']):
