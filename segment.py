@@ -261,16 +261,18 @@ def watershed_segment(
         return labels
 
 def plot_segment_steps(
+    raw_imgs,
     segment_dict, 
     img_idx, 
-    keys=['cropped', 'binarized', 'distance-map', 'colored-labels'],
+    keys=['binarized', 'distance-map', 'colored-labels'],
     plot_maxima='distance-map', 
     fig_w=7,
 ):
     n_axes_h = 1
-    n_axes_w = len(keys)
-    img_w = segment_dict['cropped'].shape[2]
-    img_h = segment_dict['cropped'].shape[1]
+    # + 1 accounts for raw image in first axis
+    n_axes_w = len(keys) + 1
+    img_w = raw_imgs.shape[2]
+    img_h = raw_imgs.shape[1]
     title_buffer = .5
     fig_h = fig_w * (img_h / img_w) * (n_axes_h / n_axes_w) + title_buffer
     fig, axes = plt.subplots(
@@ -278,18 +280,18 @@ def plot_segment_steps(
         constrained_layout=True, facecolor='white',
     )
     ax = axes.ravel()
+    ax[0].imshow(
+        raw_imgs[img_idx, ...], interpolation='nearest',
+        # vmin=0, vmax=1
+    )
+    ax[0].set_axis_off()
+    ax[0].set_title('raw')
     for i, key in enumerate(keys):
-        if key == 'cropped':
-            ax[i].imshow(
-                segment_dict[key][img_idx, ...], interpolation='nearest',
-                vmin=0, vmax=1
-            )
-        else:
-            ax[i].imshow(
-                segment_dict[key][img_idx, ...], interpolation='nearest'
-            )
-        ax[i].set_axis_off()
-        ax[i].set_title(key)
+        ax[i + 1].imshow(
+            segment_dict[key][img_idx, ...], interpolation='nearest'
+        )
+        ax[i + 1].set_axis_off()
+        ax[i + 1].set_title(key)
         if plot_maxima == key:
             # Get x, y for all maxima
             x = segment_dict['maxima-points'][:, 2]
@@ -297,7 +299,7 @@ def plot_segment_steps(
             # Find the maxima that fall on the current slice (img_idx)
             x_img_idx = x[segment_dict['maxima-points'][:, 0] == img_idx]
             y_img_idx = y[segment_dict['maxima-points'][:, 0] == img_idx]
-            ax[i].scatter(x_img_idx, y_img_idx, color='red', s=2)
+            ax[i + 1].scatter(x_img_idx, y_img_idx, color='red', s=2)
     return fig, axes
     
 def plot_process(img_idx, process_dict):
