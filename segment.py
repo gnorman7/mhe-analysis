@@ -230,8 +230,9 @@ def watershed_segment(
             regions += measure.regionprops(labels)
         areas = [region.area for region in regions]
         median_slice_area = np.median(areas)
-        # Radius of circle of equivalent area
-        min_peak_distance = int(round(np.sqrt(median_slice_area) // np.pi))
+        # Twice the radius of circle of equivalent area
+        min_peak_distance = 2 * int(round(np.sqrt(median_slice_area) // np.pi))
+        print(f'Calculated min_peak_distance: {min_peak_distance}')
     # Calculate the local maxima with min_peak_distance separation
     maxima = feature.peak_local_max(
         dist_map, 
