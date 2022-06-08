@@ -177,12 +177,28 @@ def binarize_3d(
     else:
         return filled
 
-def binarize_multiotsu(imgs, n_regions):
+def binarize_multiotsu(imgs, n_otsu_classes=2, n_selected_thresholds=1):
+    """Binarize stack of images (3D array) using multi-Otsu thresholding algorithm.
+
+    Parameters
+    ----------
+    imgs : numpy.ndarray
+        3D array representing slices of a 3D volume.
+    n_otsu_classes : int, optional
+        Number of classes to threshold images, by default 2
+    n_selected_thresholds : int, optional
+        Number of classes to group together (from the back of the thresholded values array returned by multi-Otsu function) to create binary image, by default 1
+
+    Returns
+    -------
+    numpy.ndarray, list
+        3D array of the shape imgs.shape containing binarized images; list of threshold values used to create binarized images 
+    """
     imgs_binarized = np.zeros_like(imgs, dtype=np.float32)
     imgs_flat = imgs.flatten()
     imgs_binarized = np.zeros_like(imgs, dtype=np.float32)
-    thresh_vals = filters.threshold_multiotsu(imgs_flat, n_regions)
-    imgs_binarized[imgs > thresh_vals[-1]] = 1
+    thresh_vals = filters.threshold_multiotsu(imgs_flat, n_otsu_classes)
+    imgs_binarized[imgs > thresh_vals[-n_selected_thresholds]] = 1
     return imgs_binarized, thresh_vals
 
 def segment_3d(
