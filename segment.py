@@ -12,7 +12,10 @@ from skimage import color, feature, filters, morphology, measure, segmentation, 
 
 
 def load_images(
-    img_dir, 
+    img_dir,
+    slice_crop=None, 
+    row_crop=None, 
+    col_crop=None, 
     return_3d_array=False, 
     also_return_names=False,
     convert_to_float=False,
@@ -24,6 +27,12 @@ def load_images(
     ----------
     img_dir : str or Path
         Path to directory containing images to be loaded.
+    slice_crop : list or None
+        Cropping limits of slice dimension (imgs.shape[0]) of 3D array of images. Essentially chooses subset of images from sorted image directory. If None, all images/slices will be loaded. Defaults to None.
+    row_crop : str or None
+        Cropping limits of row dimension (imgs.shape[1]) of 3D array of images. If None, all rows will be loaded. Defaults to None.
+    col_crop : str or None
+        Cropping limits of column dimension (imgs.shape[2]) of 3D array of images. If None, all columns will be loaded. Defaults to None.
     return_3d_array : bool, optional
         If True, return loaded images as a 3D numpy array, else return images in list, by default False
     also_return_names : bool, optional
@@ -42,9 +51,20 @@ def load_images(
         path for path in Path(img_dir).glob(f'*{file_suffix}')
     ]
     img_path_list.sort()
+    if slice_crop is None:
+        slice_crop = [0, len(img_path_list)]
+    img_path_sublist = [
+        img_path for i, img_path in enumerate(img_path_list) 
+        if i in list(range(slice_crop[0], slice_crop[1]))
+    ]
+    img = iio.imread(img_path_sublist[0])
+    if row_crop is None:
+        row_crop = [0, img.shape[0]]
+    if col_crop is None:
+        col_crop = [0, img.shape[1]]
     imgs = []
-    for img_path in img_path_list:
-        img = iio.imread(img_path) 
+    for img_path in img_path_sublist:
+        img = iio.imread(img_path)[row_crop[0]:row_crop[1], col_crop[0]:col_crop[1]]
         if convert_to_float:
             img = util.img_as_float(img)
         imgs.append(img)
