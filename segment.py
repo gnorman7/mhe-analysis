@@ -55,6 +55,19 @@ def load_images(
     else:
         return imgs
 
+def crop_data(imgs, slice_lims=None, row_lims=None, col_lims=None):
+    if slice_lims is None:
+        slice_lims = [0, imgs.shape[0]]
+    if row_lims is None:
+        row_lims = [0, imgs.shape[1]]
+    if col_lims is None:
+        col_lims = [0, imgs.shape[2]]
+    return imgs[
+        slice_lims[0]:slice_lims[1], 
+        row_lims[0]:row_lims[1], 
+        col_lims[0]:col_lims[1]
+    ]
+
 def save_images(
     imgs,
     save_dir,
@@ -143,6 +156,14 @@ def binarize_3d(
         return process_dict
     else:
         return filled
+
+def binarize_multiotsu(imgs, n_regions):
+    imgs_binarized = np.zeros_like(imgs, dtype=np.float32)
+    imgs_flat = imgs.flatten()
+    imgs_binarized = np.zeros_like(imgs, dtype=np.float32)
+    thresh_vals = filters.threshold_multiotsu(imgs_flat, n_regions)
+    imgs_binarized[imgs > thresh_vals[-1]] = 1
+    return imgs_binarized, thresh_vals
 
 def segment_3d(
     imgs, 
