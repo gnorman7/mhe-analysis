@@ -596,6 +596,51 @@ def save_each_stl(
         save_stl(verts, faces, save_path, suppress_save_message=True)
     print(f'{particle_i} STL file(s) saved: {save_dir_path}')
 
+def plot_stl(stl_path, zoom=True):
+    """Load an STL and plot it using matplotlib.
+
+    Parameters
+    ----------
+    stl_path : Path or str
+        Path to an STL file to load or a directory containing STL. If directory, a random STL file will be loaded from the directory.
+    zoom : bool, optional
+        If True, plot will be zoomed in to show the particle as large as  Defaults to True
+
+    Returns
+    -------
+    matplotlib.figure, matplotlib.axis
+        Matplotlib figure and axis objects corresponding to 3D plot
+    """
+    stl_path = Path(stl_path)
+    # If stl_path is a directory, choose a random file from inside
+    if stl_path.is_dir():
+        stl_path_list = [path for path in Path(stl_path).glob('*.stl')]
+        if len(stl_path_list) == 0:
+            raise ValueError(f'No STL files found in directory: {stl_path}')
+        random_i = np.random.randint(0, len(stl_path_list))
+        stl_path = stl_path_list[random_i]
+        print(f'Plotting STL: {stl_path.name}')
+    elif str(stl_path).endswith('.stl'):
+        raise ValueError(f'File is not an STL: {stl_path}')
+    # Load the STL files and add the vectors to the plot
+    stl_mesh = mesh.Mesh.from_file(stl_path)
+    mpl_mesh = Poly3DCollection(stl_mesh.vectors)
+    mpl_mesh.set_edgecolor('black')
+    # Display resulting triangular mesh using Matplotlib
+    fig = plt.figure(figsize=(10, 10))
+    ax = fig.add_subplot(projection='3d')
+    ax.add_collection3d(mpl_mesh)
+    ax.set_xlabel("x-axis")
+    ax.set_ylabel("y-axis")
+    ax.set_zlabel("z-axis")
+    if zoom:
+        # stl_mesh.vectors is Mx3x3 array (M 2D (3x3) arrays: [x, y, z]), 
+        # Transpose (array.T) is 3x3xM array (3 2D (3xM) arrays: [x], [y], [z])
+        ax.set_xlim(np.min(stl_mesh.vectors.T[0]), np.max(stl_mesh.vectors.T[0]))
+        ax.set_ylim(np.min(stl_mesh.vectors.T[1]), np.max(stl_mesh.vectors.T[1]))
+        ax.set_zlim(np.min(stl_mesh.vectors.T[2]), np.max(stl_mesh.vectors.T[2]))
+    return fig, ax
+
 def raw_to_3d_segment(
     img_dir, 
     new_segmented_dir_path,
