@@ -450,6 +450,11 @@ def show_particle_labels(
         )
     return fig, ax
 
+def isolate_particle(segment_dict, integer_label):
+    imgs_single_particle = np.zeros_like(segment_dict['integer-labels'])
+    imgs_single_particle[segment_dict['integer-labels'] == integer_label] = 1
+    return imgs_single_particle
+
 def raw_to_3d_segment(
     img_dir, 
     new_segmented_dir_path,
