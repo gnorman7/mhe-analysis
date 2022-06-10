@@ -18,6 +18,7 @@ def load_images(
     col_crop=None, 
     return_3d_array=False, 
     also_return_names=False,
+    also_return_dir_name=False,
     convert_to_float=False,
     file_suffix='tif'
 ):
@@ -37,6 +38,8 @@ def load_images(
         If True, return loaded images as a 3D numpy array, else return images in list, by default False
     also_return_names : bool, optional
         If True, returns a list of the names of the images in addition to the list of images themselves. Defaults to False.
+    also_return_dir_name : bool, optional
+        If True, returns a string representing the name of the image directory in addition to the list of images themselves. Defaults to False.
     convert_to_float : bool, optional
         If True, convert loaded images to floating point images, else retain their original dtype. Defaults to False
     file_suffix : str, optional
@@ -70,8 +73,12 @@ def load_images(
         imgs.append(img)
     if return_3d_array:
         imgs = np.stack(imgs)
-    if also_return_names:
+    if also_return_names and also_return_dir_name:
+        return imgs, [img_path.stem for img_path in img_path_list], img_dir.stem
+    elif also_return_names:
         return imgs, [img_path.stem for img_path in img_path_list]
+    elif also_return_dir_name:
+        return imgs, img_dir.stem
     else:
         return imgs
 
