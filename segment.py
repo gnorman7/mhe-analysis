@@ -417,6 +417,39 @@ def count_segmented_voxels(process_dict, exclude_zero=True):
         del label_counts[0]
     return label_counts
 
+def show_particle_labels(
+    segment_dict, 
+    img_idx,
+    label_color='white',
+    label_bg_color=(0, 0, 0, 0),
+    key='colored-labels',
+    fig_w=7,
+):
+    n_axes_h = 1
+    n_axes_w = 1
+    img_w = segment_dict['integer-labels'].shape[2]
+    img_h = segment_dict['integer-labels'].shape[1]
+    title_buffer = .5
+    fig_h = fig_w * (img_h / img_w) * (n_axes_h / n_axes_w) + title_buffer
+    fig, ax = plt.subplots(
+        n_axes_h, n_axes_w, dpi=300, figsize=(fig_w, fig_h), 
+        constrained_layout=True, facecolor='white',
+    )
+    ax.imshow(
+        segment_dict[key][img_idx, ...], interpolation='nearest'
+    )
+    ax.set_axis_off()
+    ax.set_title(key)
+    regions = measure.regionprops(segment_dict['integer-labels'][img_idx, ...])
+    label_centroid_pairs = [(region.label, region.centroid) for region in regions]
+    for label, centroid in label_centroid_pairs:
+        ax.text(
+            centroid[1], centroid[0], str(label), fontsize='large',
+            color=label_color, backgroundcolor=label_bg_color, ha='center', 
+            va='center'
+        )
+    return fig, ax
+
 def raw_to_3d_segment(
     img_dir, 
     new_segmented_dir_path,
