@@ -455,6 +455,32 @@ def isolate_particle(segment_dict, integer_label):
     imgs_single_particle[segment_dict['integer-labels'] == integer_label] = 1
     return imgs_single_particle
 
+def plot_particle_slices(imgs_single_particle, n_slices=4, fig_w=7):
+    # bounds: (min_slice, min_row, min_col, max_slice, max_row, max_col)
+    bounds = measure.regionprops(imgs_single_particle)[0].bbox
+    print(bounds)
+    # bounds[0] and bounds[3] used for min_slice and max_slice respectively
+    slices = [round(i) for i in np.linspace(bounds[0], bounds[3], n_slices)]
+    n_axes_h = 1
+    n_axes_w = n_slices
+    img_w = imgs_single_particle.shape[2]
+    img_h = imgs_single_particle.shape[1]
+    title_buffer = .5
+    fig_h = fig_w * (img_h / img_w) * (n_axes_h / n_axes_w) + title_buffer
+    fig, axes = plt.subplots(
+        n_axes_h, n_axes_w, dpi=300, figsize=(fig_w, fig_h), 
+        constrained_layout=True, facecolor='white',
+    )
+    if not isinstance(axes, np.ndarray):
+        ax = [axes]
+    else:
+        ax = axes.ravel()
+    for i, slice_i in enumerate(slices):
+        ax[i].imshow(imgs_single_particle[slice_i, ...], interpolation='nearest')
+        ax[i].set_axis_off()
+        ax[i].set_title(f'Slice: {slice_i}')
+    return fig, ax
+
 def raw_to_3d_segment(
     img_dir, 
     new_segmented_dir_path,
