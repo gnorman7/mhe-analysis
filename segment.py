@@ -284,8 +284,8 @@ def watershed_segment(
 
     Returns
     -------
-    list
-        List of 2-D arrays representing the segmented and labeled images.
+    segment_dict : dict
+        Dictionary of 2-D arrays the segmentation steps and labeled images. Keys for dict: 'binarized', 'distance-map', 'maxima-points', 'maxima-mask', 'seeds', 'integer-labels', 'colored-labels'
     """
     dist_map = ndi.distance_transform_edt(imgs_binarized)
     # If prompted, calculate equivalent median radius
@@ -545,6 +545,56 @@ def save_stl(verts, faces, save_path, suppress_save_message=False):
         stl_mesh.save(save_path)
         if not suppress_save_message:
             print(f'STL saved: {save_path}')
+
+def save_each_stl(
+    segment_dict, 
+    dir_name, 
+    save_dir_parent_path,
+    voxel_step_size=1,
+    n_particle_label_digits=5
+):
+    """Iterate through particles in segment_dict['integer-labels'] and use marching cubes algorithm to convert
+
+    Parameters
+    ----------
+    segment_dict : dict
+        Dictionary containing segmentation results with the key and value pair 'integer-labels' and 3D array of integers which N unique labels that correspond to N individual particles
+    dir_name : str
+        Name for directory that will be created to contain STL files.
+    save_dir_parent_path : Path or str
+        Path to the directory where the STL-containing directory will be created.
+    voxel_step_size : int, optional
+        Number of voxels to iterate across in marching cubes algorithm. Larger steps yield faster but coarser results. Defaults to 1. 
+    n_particle_label_digits : int, optional
+        Number of digits to denote particle label. Determines number of leading zeros. Defaults to 5.
+
+    Raises
+    ------
+    ValueError
+        Raise ValueError when directory named dir_name already exists at location save_dir_parent_path
+    """
+    save_dir_parent_path = Path(save_dir_parent_path)
+    save_dir_path = Path(save_dir_parent_path / f'{dir_name}_STLs')
+    if save_dir_path.exists():
+        raise ValueError(f'Save directory already exists: {save_dir_path}')
+    else:
+        # Make directory to save STL files
+        save_dir_path.mkdir()
+    n_particles = np.max(segment_dict['integer-labels'])
+    print(f'Saving {n_particles} STL file(s)...')
+    # Start iteration at label 1 because 0 is background
+    # End iteration at n_particles + 1 to include max label
+    for particle_i in range(1, n_particles + 1):
+        # Isolate particle with label particle_i
+        isolated_voxels = isolate_particle(segment_dict, particle_i)
+        # Use marching cubes to obtain the surface mesh of these ellipsoids
+        verts, faces, normals, values = measure.marching_cubes(
+            isolated_voxels, step_size=voxel_step_size
+        ) 
+        fn = f'{dir_name}-{str(particle_i).zfill(n_particle_label_digits)}.stl'
+        save_path = Path(save_dir_path / fn)
+        save_stl(verts, faces, save_path, suppress_save_message=True)
+    print(f'{particle_i} STL file(s) saved: {save_dir_path}')
 
 def raw_to_3d_segment(
     img_dir, 
