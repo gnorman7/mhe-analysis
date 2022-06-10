@@ -10,6 +10,7 @@ import napari
 import numpy as np
 from scipy import ndimage as ndi
 from skimage import color, feature, filters, morphology, measure, segmentation, util
+from stl import mesh
 
 
 def load_images(
@@ -511,6 +512,39 @@ def plot_mesh_3D(verts, faces):
     ax.set_ylim(min(verts[:, 1]), max(verts[:, 1]))
     ax.set_zlim(min(verts[:, 2]), max(verts[:, 2]))
     return fig, ax
+
+def save_stl(verts, faces, save_path, suppress_save_message=False):
+    """Save triangular mesh defined by vertices and face indices as an STL file.
+
+    Parameters
+    ----------
+    verts : array-like
+        Array of (x, y, z) vertices indexed with faces to construct triangles.
+    faces : array-like
+        Array of indices referencing verts that define the triangular faces of the mesh.
+    save_path : Path or str
+        Path at which STL file will be saved. If doesn't end with '.stl', it will be added.
+    suppress_save_message : bool, optional
+        If True, particle label and STL file path will not be printed. By default False
+    """
+    if not str(save_path).endswith('.stl'):
+        save_path = Path(f'{save_path}.stl')
+    if save_path.exists():
+        print(f'File already exists: {save_path}')
+    else:
+        # Convert vertices (verts) and faces to numpy-stl format for saving:
+        vertice_count = faces.shape[0]
+        stl_mesh = mesh.Mesh(
+            np.zeros(vertice_count, dtype=mesh.Mesh.dtype),
+            remove_empty_areas=False
+        )
+        for i, face in enumerate(faces):
+            for j in range(3):
+                stl_mesh.vectors[i][j] = verts[face[j], :]
+        # Write the mesh to STL file
+        stl_mesh.save(save_path)
+        if not suppress_save_message:
+            print(f'STL saved: {save_path}')
 
 def raw_to_3d_segment(
     img_dir, 
