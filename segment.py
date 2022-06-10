@@ -5,6 +5,7 @@ from pathlib import Path
 # import imagecodecs  # dependency required for loading compressed tif images
 import imageio as iio
 import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 import napari
 import numpy as np
 from scipy import ndimage as ndi
@@ -479,6 +480,36 @@ def plot_particle_slices(imgs_single_particle, n_slices=4, fig_w=7):
         ax[i].imshow(imgs_single_particle[slice_i, ...], interpolation='nearest')
         ax[i].set_axis_off()
         ax[i].set_title(f'Slice: {slice_i}')
+    return fig, ax
+
+def plot_mesh_3D(verts, faces):
+    """Plot triangualar mesh with Matplotlib.
+
+    Parameters
+    ----------
+    verts : array-like
+        Array of (x, y, z) vertices indexed with faces to construct triangles.
+    faces : array-like
+        Array of indices referencing verts that define the triangular faces of the mesh.
+
+    Returns
+    -------
+    matplotlib.figure, matplotlib.axis
+        Matplotlib figure and axis objects corresponding to 3D plot
+    """
+    # Display resulting triangular mesh using Matplotlib
+    fig = plt.figure(figsize=(10, 10))
+    ax = fig.add_subplot(projection='3d')
+    # Fancy indexing: `verts[faces]` to generate a collection of triangles
+    mesh = Poly3DCollection(verts[faces])
+    mesh.set_edgecolor('black')
+    ax.add_collection3d(mesh)
+    ax.set_xlabel("x-axis")
+    ax.set_ylabel("y-axis")
+    ax.set_zlabel("z-axis")
+    ax.set_xlim(min(verts[:, 0]), max(verts[:, 0]))
+    ax.set_ylim(min(verts[:, 1]), max(verts[:, 1]))
+    ax.set_zlim(min(verts[:, 2]), max(verts[:, 2]))
     return fig, ax
 
 def raw_to_3d_segment(
