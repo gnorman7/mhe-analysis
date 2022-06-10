@@ -546,7 +546,7 @@ def save_stl(verts, faces, save_path, suppress_save_message=False):
         if not suppress_save_message:
             print(f'STL saved: {save_path}')
 
-def save_each_stl(
+def save_as_stl_files(
     segment_dict, 
     dir_name, 
     save_dir_parent_path,
