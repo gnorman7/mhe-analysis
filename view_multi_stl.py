@@ -12,6 +12,14 @@ import sys
 SHOW_WIREFRAME = False
 
 def handle_args(args):
+    """Function for plotting all the STL files in a directory.
+    ----------
+    Parameters
+    ----------
+    args : list
+        Arguments passed to terminal in the form of a list
+        (separated by spaces)
+    """
     try:
         if args[0] == '-i':
             if len(args) == 2:
