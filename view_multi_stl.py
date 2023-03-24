@@ -1,3 +1,4 @@
+import matplotlib.pyplot as plt
 import numpy as np
 import open3d as o3d
 from pathlib import Path
@@ -5,6 +6,8 @@ import sys
 # import mesh_ops as ops
 # import segment
 
+
+# To-do: add "-c" flag option for color string
 
 SHOW_WIREFRAME = False
 
@@ -41,15 +44,19 @@ def load_stl_meshes(
         fn_suffix='',
         particleIDs=None,
         separate_color=None,
+        colors='tab10',
         iter_size=1):
     stl_dir_path = Path(stl_dir_path)
     n_digits = 2
-    colors = [
-        [1.0, 0.7, 0.0],
-        [1.0, 0.0, 0.0],
-        [0.0, 0.7, 0.0],
-        [0.0, 0.7, 1.0],
-    ]
+    if colors == 'four':
+        colors = [
+            (1.0, 0.7, 0.0),
+            (1.0, 0.0, 0.0),
+            (0.0, 0.7, 0.0),
+            (0.0, 0.7, 1.0),
+        ]
+    elif colors == 'tab10':
+        colors = plt.cm.tab10.colors
     if particleIDs is not None:
         stl_paths = [
             (
