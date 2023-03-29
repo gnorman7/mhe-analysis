@@ -1,3 +1,4 @@
+import matplotlib.pyplot as plt
 import numpy as np
 import open3d as o3d
 from pathlib import Path
@@ -6,9 +7,19 @@ import sys
 # import segment
 
 
+# To-do: add "-c" flag option for color string
+
 SHOW_WIREFRAME = False
 
 def handle_args(args):
+    """Function for plotting all the STL files in a directory.
+    ----------
+    Parameters
+    ----------
+    args : list
+        Arguments passed to terminal in the form of a list
+        (separated by spaces)
+    """
     try:
         if args[0] == '-i':
             if len(args) == 2:
@@ -41,15 +52,19 @@ def load_stl_meshes(
         fn_suffix='',
         particleIDs=None,
         separate_color=None,
+        colors='tab10',
         iter_size=1):
     stl_dir_path = Path(stl_dir_path)
     n_digits = 2
-    colors = [
-        [1.0, 0.7, 0.0],
-        [1.0, 0.0, 0.0],
-        [0.0, 0.7, 0.0],
-        [0.0, 0.7, 1.0],
-    ]
+    if colors == 'four':
+        colors = [
+            (1.0, 0.7, 0.0),
+            (1.0, 0.0, 0.0),
+            (0.0, 0.7, 0.0),
+            (0.0, 0.7, 1.0),
+        ]
+    elif colors == 'tab10':
+        colors = plt.cm.tab10.colors
     if particleIDs is not None:
         stl_paths = [
             (
